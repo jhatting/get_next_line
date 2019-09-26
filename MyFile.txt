@@ -1,0 +1,4 @@
+Hi my name is Sam - Line 1
+This is line 2 of my text file
+This is line 3 of my text file
+This is my final line, line 4 of my text file
