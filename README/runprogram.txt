@@ -1,0 +1,12 @@
+1. make sure you have the following files updated:
+MyFile.txt   author    get_next_line.c     get_next_line.h    main.c 	libft/libft.a
+2. if no such libft.a file exists, then Make sure you open your libft and "make" the file to create you .o and .a files.
+3. gcc get_next_line.c get_next_line.h libft/libft.a main.c
+4. ./a.out MyFile.txt
+
+
+Result:
+Hey this is my  Line 1
+Line 2 should be asking you the following
+1. Please be kind in correcting me On line 3
+2. I will be your friend if you pass me line 4
