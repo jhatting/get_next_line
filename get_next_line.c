@@ -6,90 +6,136 @@
 /*   By: shat <marvin@42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/25 20:07:31 by shat              #+#    #+#             */
-/*   Updated: 2019/10/09 13:48:00 by shat             ###   ########.fr       */
+/*   Updated: 2019/10/17 13:00:53 by shat             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-/*
-** 1. takes pointer-to-pointer (**line) and file descriptor (fd) as argument
-** 2. reads BUFF_SIZE characters into a buffer
-** 3. adds contents of buf to string (**line), continuing until '\n' is found
-** 		• **line now points at 1 line of the file (to be printed by main())
-** 4. stores remaining buf chars in a static array (extra[fd]) for next fn call
-** 5. return value (int) is just a flag for whether op was successful
-**		•  1 = line was read
-**		•  0 = file has been completely read
-**		• -1 = an error occurred
-** This function appends a single line into our line variable. We do this by
-** finding the length of the line. If at index len, the character is a newline,
-** we save the string into line up to the length found. Then we readjust the
-** stored data (**s) by creating a temporary string that stored the rest of data
-** after the newline. We free the stored data to update it to the current
-** address because we already append a line from it. This is done by freeing *s
-** and setting it equal to the temporary string that stored the remaining data.
-** At any point when we reach the end of the file, we free the memory used to
-** track our location in *s because it is not needed anymore.
-*/
-
 #include "get_next_line.h"
 
-static int		appendline(char **s, char **line)
+/*
+**allocates memory, takes value position and length (ft_strsub)
+*/
+
+char			*mallocsizelensub(char const *s, unsigned int start, size_t len)
+{
+	char	*str;
+	size_t	i;
+
+	if (s == NULL)
+		return (NULL);
+	if ((str = (char *)malloc(sizeof(char) * (len + 1))))
+	{
+		i = 0;
+		while (i < len)
+		{
+			str[i] = s[start + i];
+			i++;
+		}
+		str[i] = '\0';
+		return (str);
+	}
+	else
+		return (NULL);
+}
+
+/*
+**builds a string by concatenating the elements in a set of data &adding a separator btwn them
+**(ft_strjoin)
+*/
+
+char			*fd_joinbuff(char const *s1, char const *s2)
+{
+	char	*str;
+	int		i;
+
+	if ((s1 != NULL && s2 != NULL) && \
+	(str = (char *)malloc(sizeof(char) * (1 + ft_strlen(s1) + ft_strlen(s2)))))
+	{
+		i = 0;
+		while (*s1)
+		{
+			str[i] = *s1;
+			i++;
+			s1++;
+		}
+		while (*s2)
+		{
+			str[i] = *s2;
+			i++;
+			s2++;
+		}
+		str[i] = '\0';
+		return (str);
+	}
+	else
+		return (NULL);
+}
+
+/*
+**LINE EVALAUTATION:
+***-Reads file line by line up to \n.
+***-Finds the length of a line.
+***-Creates a new substring allocates memory
+*/
+
+static int		evaluatesentence(char **s, char **line)
 {
 	int			len;
 	char		*temp;
 
 	len = 0;
+	//while string len is not a newline and not a NULL increment
 	while ((*s)[len] != '\n' && (*s)[len] != '\0')
 		len++;
+	//if string len is a newline then the following:
 	if ((*s)[len] == '\n')
 	{
-		*line = ft_strsub(*s, 0, len);
+		//allocates memory, takes value position and length (ft_strsub)
+		*line = mallocsizelensub(*s, 0, len);
+		//ft_strdup duplicates the strings address includes the length and the null term
 		temp = ft_strdup(&((*s)[len + 1]));
+		//frees the strings memory
 		free(*s);
 		*s = temp;
+		//if string zero equals NULL then delete,free & set to NULL
 		if ((*s)[0] == '\0')
 			ft_strdel(s);
 	}
+	//if the *line equals the duplicated string delete,free & set to NULL
 	else
 	{
 		*line = ft_strdup(*s);
 		ft_strdel(s);
 	}
+	//return 1 means the line has been read.
 	return (1);
 }
 
 /*
-** This is a helper function created to output the results after all the other
-** cases are taken care of in get_next_line. For example, if ret is less than 0,
-** then return -1 since an error occurred. If the reading is completed, return a
-** 0. Else, go to appendline function to return 1 and save the line read at the
-** current address of the static variable stored.
+**OUTPUTS:
+***-Has the line been read -RETURN (1)
+***-If any error(nothing in file) -RETURN (-1)
+***-If the entire file has been Read -RETURN (0)
 */
 
 static int		output(char **s, char **line, int ret, int fd)
 {
+	//if the return is less than 0 return -1
 	if (ret < 0)
 		return (-1);
+	//if the return is equal to zero or the string FD equals NULL, return 0
 	else if (ret == 0 && s[fd] == NULL)
 		return (0);
 	else
-		return (appendline(&s[fd], line));
+		// or else go back to the function evaluate function to get a return value
+		return (evaluatesentence(&s[fd], line));
 }
 
 /*
-** The get_next_line function reads a file and returns the line ending with a
-** newline character from a file descriptor. A static variable is used, so that
-** whenever get_next_line is called, it remembers the previous function call.
-** When get_next_line is first called, we check to see if our static variable
-** **s is empty. If it is, we allocate memory for it using our buff string.
-** In the loop, we will continue to read more of the line and join them together
-** using a temporary string. This temporary string will replace the stored data
-** each iteration so that we can keep track of how much is read and delete
-** the previous stored data. This is needed because we are only reading so many
-** n-bytes at a time decided by our BUFF_SIZE. If we read at each iteration
-** without freeing memory, then we would have memory leaks. The loop breaks when
-** a newline is encountered. Finally, we call output function to check what
-** should be returned.
+**READS:
+***-Reads the file
+***-Reads and gives it a buff size
+***-Reading line by line, memory allocation & freeing it
 */
 
 int				get_next_line(const int fd, char **line)
@@ -98,20 +144,27 @@ int				get_next_line(const int fd, char **line)
 	static char	*s[FD_SIZE];
 	char		buff[BUFF_SIZE + 1];
 	char		*temp;
-
+	//if file descriptor is less than 0 or the line is equal to NULL RETURN -1
 	if (fd < 0 || line == NULL)
 		return (-1);
+	//while return read fd, buff, BUFF_SIZE is greater than zero. return to the function output.
 	while ((ret = read(fd, buff, BUFF_SIZE)) > 0)
 	{
+		//buff return is NULL
 		buff[ret] = '\0';
+		//if string file descriptor is NULL
 		if (s[fd] == NULL)
+			//string fd is ft_strdup duplicating the strings address includes the length
 			s[fd] = ft_strdup(buff);
 		else
 		{
-			temp = ft_strjoin(s[fd], buff);
+			//temporary is concatenating string FD & buff freeing it
+			temp = fd_joinbuff(s[fd], buff);
 			free(s[fd]);
+			//string fd is tempory file stored space
 			s[fd] = temp;
 		}
+		// searches the occurance of newline in the string file descriptor and breaks the loop
 		if (ft_strchr(s[fd], '\n'))
 			break ;
 	}
